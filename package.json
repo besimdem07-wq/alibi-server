@@ -1,0 +1,22 @@
+{
+  "name": "alibi-server",
+  "version": "1.0.0",
+  "description": "Backend temps réel pour L'Alibi — jeu de soirée",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0",
+    "@fastify/cors": "^9.0.1",
+    "fastify": "^4.27.0",
+    "ioredis": "^5.3.2",
+    "socket.io": "^4.7.5",
+    "uuid": "^10.0.0"
+  }
+}
