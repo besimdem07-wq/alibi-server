@@ -263,19 +263,29 @@ io.on("connection", (socket) => {
     const room = await getRoom(roomId);
     if (!room) return ack?.({ error: "Room introuvable" });
 
-    // Enregistrer le joueur (ou mettre à jour son socketId en cas de reconnexion)
-    const existing = room.players.find((p) => p.role === role && p.team === team);
+    // Pour les joueurs en attente de rôle (team:99), identifier par socketId
+    // Pour les joueurs avec rôle fixe, identifier par role+team
+    let existing;
+    if (team === 99) {
+      // Chercher par socketId d'abord, puis par nom si reconnexion
+      existing = room.players.find(p => p.socketId === socket.id && p.team === 99)
+                 || room.players.find(p => p.name === playerName && p.team === 99);
+    } else {
+      existing = room.players.find(p => p.role === role && p.team === team);
+    }
+
     if (existing) {
       existing.socketId = socket.id;
       existing.name = playerName || existing.name;
+      existing.clientRole = clientRole || existing.clientRole;
     } else {
       room.players.push({
-        id:       uuidv4(),
-        name:     playerName || `Joueur ${role}`,
+        id:         uuidv4(),
+        name:       playerName || `Joueur ${role}`,
         role,
         team,
         clientRole: clientRole || ROLES.HOST,
-        socketId: socket.id,
+        socketId:   socket.id,
       });
     }
 
