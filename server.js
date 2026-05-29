@@ -104,7 +104,7 @@ const anthropic = new Anthropic({ apiKey: ANTHROPIC_KEY });
 async function callClaude(system, user) {
   const msg = await anthropic.messages.create({
     model:      "claude-haiku-4-5-20251001",
-    max_tokens: 1000,
+    max_tokens: 2000,
     system,
     messages:   [{ role: "user", content: user }],
   });
@@ -112,16 +112,23 @@ async function callClaude(system, user) {
   return JSON.parse(text.replace(/```json|```/g, "").trim());
 }
 
-const GENERATOR_SYSTEM = `Tu es le "Commissaire", animateur d'un jeu de soirée appelé L'Alibi.
-Génère un scénario de crime absurde et les questions d'interrogatoire.
+const GENERATOR_SYSTEM = `Tu es le Commissaire Morel, un inspecteur lausannois légendaire, aussi redoutable qu'excentrique. Tu interroges des suspects dans des affaires absurdes mais tu prends TON TRAVAIL très au sérieux. Tu as une personnalité marquée : sarcastique, théâtral, légèrement condescendant, et tu aimes les métaphores culinaires et lacustres (le lac Léman, la fondue, les Alpes...).
 
-RÈGLES :
-- Délit : farfelu, précis, drôle. Un lieu + un méfait + une circonstance absurde.
-- 5 questions sur des DÉTAILS CONCRETS de l'alibi (où, avec qui, quoi, détail sensoriel, action précise). Anodines en apparence, pièges en réalité.
-- Langue française, ton décalé et dramatique.
+Génère un scénario de crime absurde se déroulant dans la région lausannoise et les questions d'interrogatoire associées.
 
-Réponds UNIQUEMENT avec ce JSON strict :
-{"accusation":"string (max 20 mots)","accusation_dramatique":"string (version TTS théâtrale, 2-3 phrases)","questions":[{"id":1,"text":"string"},{"id":2,"text":"string"},{"id":3,"text":"string"},{"id":4,"text":"string"},{"id":5,"text":"string"}]}`;
+RÈGLES DU SCÉNARIO :
+- Le délit doit se passer à Lausanne ou environs (Ouchy, la Riponne, le MUDAC, le lac, Flon, Sauvabelin, Pully, Lutry, Morges, l'EPFL, la Maison du Peuple...).
+- Le méfait doit être farfelu, précis et drôle : un lieu concret + un méfait absurde + une circonstance grotesque.
+- L'accusation_dramatique doit avoir la voix du Commissaire Morel : dramatique, légèrement pompeux, avec une touche d'humour involontaire.
+
+RÈGLES DES QUESTIONS (10 questions obligatoires) :
+- Les questions portent sur des DÉTAILS CONCRETS de l'alibi que les suspects viennent d'inventer.
+- Varier les types : temporel (heure, durée), spatial (lieu précis, trajet), social (qui était là), sensoriel (ce qu'on a mangé/entendu/vu), factuel (ce qu'on a fait exactement).
+- Anodines en apparence, mais suffisamment précises pour piéger les mensonges mal coordonnés.
+- Alterner questions courtes et questions avec un détail contextuel lausannois (météo du lac, bruit du métro m2, terrasse du Café du Grütli...).
+
+Réponds UNIQUEMENT avec ce JSON strict, sans markdown, sans texte hors JSON :
+{"accusation":"string (max 20 mots, le délit complet)","accusation_dramatique":"string (version TTS théâtrale avec la voix du Commissaire Morel, 3 phrases maximum)","questions":[{"id":1,"text":"string"},{"id":2,"text":"string"},{"id":3,"text":"string"},{"id":4,"text":"string"},{"id":5,"text":"string"},{"id":6,"text":"string"},{"id":7,"text":"string"},{"id":8,"text":"string"},{"id":9,"text":"string"},{"id":10,"text":"string"}]}`;
 
 const JUDGE_SYSTEM = `Tu es le "Juge" d'un jeu de soirée comparant deux témoignages.
 
@@ -136,7 +143,7 @@ const TIEBREAK_SYSTEM = `Tu es le "Grand Juge" d'un jeu de soirée. Deux équipe
 
 Réponds UNIQUEMENT avec : {"loser":1|2,"verdict":"string (max 20 mots, sarcastique et définitif)"}`;
 
-const SPEECH_SYSTEM = `Tu es un juge dramatique de jeu de soirée. Discours de verdict final en français, drôle, sarcastique et théâtral. Moque-toi des contradictions spécifiques. Max 100 mots.
+const SPEECH_SYSTEM = `Tu es le Commissaire Morel, inspecteur lausannois légendaire. Tu prononces ton verdict final avec ta personnalité habituelle : dramatique, sarcastique, légèrement condescendant, avec des références au lac Léman ou à la gastronomie suisse quand c'est possible. Moque-toi des contradictions spécifiques des suspects par leur nom. Max 100 mots, en français.
 Réponds UNIQUEMENT avec {"speech":"string"}`;
 
 // =============================================================
@@ -280,8 +287,10 @@ io.on("connection", (socket) => {
     socket.emit("state:sync", sanitizeForBroadcast(room));
     // Informer tous les clients du lobby (liste joueurs mise à jour)
     io.to(roomId).emit("lobby:update", {
-      players: room.players.map(({ socketId: _, ...p }) => p),
-      mode:    room.mode,
+      players: room.players
+        .filter(p => p.name !== "__OBSERVER__" && p.name !== "HOST")
+        .map(({ socketId: _, ...p }) => p),
+      mode: room.mode,
     });
     ack?.({ ok: true });
   });
