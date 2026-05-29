@@ -288,7 +288,7 @@ io.on("connection", (socket) => {
     // Informer tous les clients du lobby (liste joueurs mise à jour)
     io.to(roomId).emit("lobby:update", {
       players: room.players
-        .filter(p => p.name !== "__OBSERVER__" && p.name !== "HOST")
+        .filter(p => p.name && p.name !== "HOST" && p.name !== "__OBSERVER__" && p.name !== "__PENDING__")
         .map(({ socketId: _, ...p }) => p),
       mode: room.mode,
     });
